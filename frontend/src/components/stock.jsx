@@ -10,6 +10,17 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import notifyError from './Notifications';
 
+const formatStockData = (data) => {
+  return Object.entries(data).map(([date, values]) => ({
+    date,
+    open: parseFloat(values["1. open"]),
+    high: parseFloat(values["2. high"]),
+    low: parseFloat(values["3. low"]),
+    close: parseFloat(values["4. close"]),
+    volume: parseInt(values["5. volume"], 10),
+  }));
+};
+
 const StockDataApp = () => {
   const [selectedStock, setSelectedStock] = useState(null);
   const [startDate, setStartDate] = useState(getAgoDate(1));
@@ -39,25 +50,20 @@ const StockDataApp = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          stockSymbol: `${selectedStock.symbol}.NS`,
+          stockSymbol: "IBM", // Hardcoded or change to selectedStock.symbol if needed
           startDate,
           endDate,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Invalid stock symbol or API limit reached");
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || "Something went wrong");
       }
 
-      const data = await response.json();
-      const stockSymbol = `${selectedStock.symbol}.NS`;
-      const stockData = data.data[stockSymbol];
-
-      if (!stockData) {
-        throw new Error("No data available for the selected stock.");
-      }
-
-      setStockData(stockData);
+      const formatted = formatStockData(result.data);
+      setStockData(formatted);
     } catch (error) {
       console.error("Error fetching stock data:", error);
       notifyError(error.message);
@@ -74,7 +80,9 @@ const StockDataApp = () => {
         <EndDate value={endDate} onChange={(e) => setEndDate(e.target.value)} />
         <GetDataButton onClick={handleGetData} />
       </div>
+
       {loading && <LoadingSpinner />}
+
       {!loading && stockData && <StockDataTable stockData={stockData} />}
       {!loading && stockData && (
         <div>

@@ -28,19 +28,23 @@ app.get("/", (req, res) => {
 app.post("/getStockData", async (req, res) => {
   try {
     const { stockSymbol } = req.body;
-    const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
+    
+    const apiKey = process.env.ALPHA_VANTAGE_API_KEY || "demo";
     
     if (!stockSymbol) {
       return res.status(400).json({ success: false, error: "Stock symbol is required" });
     }
 
-    const apiUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=${stockSymbol}&apikey=${apiKey}`;
+    const apiUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&apikey=${apiKey}`;
+    
 
     const response = await axios.get(apiUrl);
+    console.log("API Response:", response.data);
 
     if (response.data["Time Series (Daily)"]) {
       res.json({ success: true, data: response.data["Time Series (Daily)"] });
     } else {
+      console.log(apiKey);
       res.status(400).json({ success: false, error: "Invalid stock symbol or API limit reached" });
     }
   } catch (error) {
@@ -73,10 +77,11 @@ app.post("/getnewsrapidapi", async (req, res) => {
 app.post("/getnews", async (req, res) => {
   try {
     const apiKey = process.env.FINANCIALMODELAPI;
-    const page = Math.floor(Math.random() * 10) + 1;
+    const page = Math.floor(Math.random() * 10); // 0–9
 
-    const apiUrl = `https://financialmodelingprep.com/api/v3/fmp/articles?page=${page}&apikey=${apiKey}`;
+    const apiUrl = `https://financialmodelingprep.com/api/v3/fmp/articles?page=${page}&size=5&apikey=${apiKey}`;
     const response = await axios.get(apiUrl);
+   
 
     res.status(200).json({ success: true, news: response.data });
   } catch (error) {
@@ -126,7 +131,7 @@ app.get("/alpha", async (req, res) => {
     const newsApiKey = process.env.ALPHA_VANTAGE_NEWS_API_KEY;
     const topics = "financial_markets";
 
-    const apiUrl = `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&topics=${topics}&apikey=${newsApiKey}`;
+    const apiUrl = `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&topics=${topics}&apikey=${apiKey}`;
     const response = await axios.get(apiUrl);
 
     res.send(response.data);

@@ -7,6 +7,7 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Footer
  from "./components/Footer";
+import NewsPage from "./components/Newspage";
 function App() {
   return (
     <Router>
@@ -18,6 +19,7 @@ function App() {
           path="predict"
           element={<PredictStockPage />}
         />
+        <Route path="/news" element={<NewsPage />}  />
       </Routes>
       <Footer />
     </Router>
