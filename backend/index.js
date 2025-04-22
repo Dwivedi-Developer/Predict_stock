@@ -79,7 +79,7 @@ app.post("/getnews", async (req, res) => {
     const apiKey = process.env.FINANCIALMODELAPI;
     const page = Math.floor(Math.random() * 10); // 0–9
 
-    const apiUrl = `https://financialmodelingprep.com/api/v3/fmp/articles?page=${page}&size=5&apikey=${apiKey}`;
+    const apiUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&apikey=demo`;
     const response = await axios.get(apiUrl);
    
 
