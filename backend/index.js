@@ -35,7 +35,7 @@ app.post("/getStockData", async (req, res) => {
       return res.status(400).json({ success: false, error: "Stock symbol is required" });
     }
 
-    const apiUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&apikey=${apiKey}`;
+    const apiUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&apikey=demo`;
     
 
     const response = await axios.get(apiUrl);
