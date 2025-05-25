@@ -6,31 +6,43 @@ import Stack from "@mui/material/Stack";
 
 const NewsPage = () => {
   const [newsData, setNewsData] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1); // MUI Pagination uses 1-based indexing
-  const itemsPerPage = 8; // Adjust as needed
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const storedData = localStorage.getItem("newsData");
         const storedDate = localStorage.getItem("newsDataDate");
-        // console.log(storedData);
         const todayDate = new Date().toISOString().split("T")[0];
-        var storedDataInJson = {};
+
+        let storedDataInJson = [];
+
         if (storedData) {
-          storedDataInJson = JSON.parse(storedData).content;
+          const parsedData = JSON.parse(storedData);
+          const timeSeries = parsedData["Time Series (Daily)"];
+
+          if (timeSeries) {
+            storedDataInJson = Object.entries(timeSeries).map(
+              ([date, values]) => ({
+                date,
+                title: `Stock Data - ${date}`,
+                author: "Market API",
+                content: `Open: ${values["1. open"]}, High: ${values["2. high"]}, Low: ${values["3. low"]}, Close: ${values["4. close"]}, Volume: ${values["5. volume"]}`,
+                image: null,
+                link: "#",
+              })
+            );
+          }
         }
 
-        if (storedData && todayDate === storedDate) {
-          // console.log("data found");
+        if (storedData && todayDate === storedDate && Array.isArray(storedDataInJson)) {
+          console.log(storedData);
           setNewsData(storedDataInJson);
           return;
-        } else if (storedData && todayDate !== storedDate) {
-          console.log(
-            "Stored data exists but date has changed. Fetching new data..."
-          );
-          localStorage.removeItem("newsData"); // Remove stored news data
-          localStorage.removeItem("newsDataDate"); // Remove stored date
+        } else {
+          localStorage.removeItem("newsData");
+          localStorage.removeItem("newsDataDate");
         }
 
         const response = await fetch("http://localhost:3001/getnews", {
@@ -42,31 +54,39 @@ const NewsPage = () => {
 
         if (response.ok) {
           const data = await response.json();
-          // console.log(data);
-          // console.log(data.news.content);
+          const timeSeries = data.news["Time Series (Daily)"];
+          let formattedData = [];
 
-          setNewsData(data.news.content);
+          if (timeSeries) {
+            formattedData = Object.entries(timeSeries).map(([date, values]) => ({
+              date,
+              title: `Stock Data - ${date}`,
+              author: "Market API",
+              content: `Open: ${values["1. open"]}, High: ${values["2. high"]}, Low: ${values["3. low"]}, Close: ${values["4. close"]}, Volume: ${values["5. volume"]}`,
+              image: null,
+              link: "#",
+            }));
+          }
+
+          setNewsData(formattedData);
           localStorage.setItem("newsData", JSON.stringify(data.news));
           localStorage.setItem("newsDataDate", todayDate);
         } else {
           notifyError("Failed to fetch news data.");
         }
       } catch (error) {
-        notifyError("hi");
-        console.error("Error fetching news data from here :", error);
-        notifyError(error);
+        console.error("Error fetching news data:", error);
+        notifyError("Error fetching news data.");
       }
     };
 
     fetchData();
   }, []);
 
-  // Calculate pagination variables
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = newsData.slice(indexOfFirstItem, indexOfLastItem);
 
-  // Change page
   const handlePageChange = (event, value) => setCurrentPage(value);
 
   return (
@@ -76,11 +96,11 @@ const NewsPage = () => {
         style={{
           display: "flex",
           flexWrap: "wrap",
-          justifyContent: "space-evenly", // Adjust as needed
-          // padding: "25px",
+          justifyContent: "space-evenly",
         }}
       >
         {currentItems.map((newsItem, index) => (
+          console.log(newsItem),
           <NewsCard
             key={index}
             title={newsItem.title}
@@ -92,10 +112,8 @@ const NewsPage = () => {
           />
         ))}
       </div>
-      <div
-        style={{ textAlign: "center", marginTop: "20px", marginBottom: "60px" }}
-      >
-        <Stack spacing={2} direction="row" justifyContent="center" color="blue">
+      <div style={{ textAlign: "center", marginTop: "20px", marginBottom: "60px" }}>
+        <Stack spacing={2} direction="row" justifyContent="center">
           <Pagination
             count={Math.ceil(newsData.length / itemsPerPage)}
             page={currentPage}
@@ -104,10 +122,12 @@ const NewsPage = () => {
             shape="rounded"
             sx={{
               "& .MuiPaginationItem-root.Mui-selected": {
-                backgroundColor: "#2196f3", // Set color for selected page
-                color: "#fff", // Text color for selected page
+                backgroundColor: "#2196f3",
+                color: "#fff",
               },
-              "& .MuiPaginationItem-root:hover": { backgroundColor: "#ccc" }, // Set color for hover
+              "& .MuiPaginationItem-root:hover": {
+                backgroundColor: "#ccc",
+              },
             }}
           />
         </Stack>
