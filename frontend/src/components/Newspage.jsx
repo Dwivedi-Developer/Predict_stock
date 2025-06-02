@@ -20,24 +20,28 @@ const NewsPage = () => {
 
         if (storedData) {
           const parsedData = JSON.parse(storedData);
-          const timeSeries = parsedData["Time Series (Daily)"];
+          const feed = parsedData.feed || [];
 
-          if (timeSeries) {
-            storedDataInJson = Object.entries(timeSeries).map(
-              ([date, values]) => ({
-                date,
-                title: `Stock Data - ${date}`,
-                author: "Market API",
-                content: `Open: ${values["1. open"]}, High: ${values["2. high"]}, Low: ${values["3. low"]}, Close: ${values["4. close"]}, Volume: ${values["5. volume"]}`,
-                image: null,
-                link: "#",
-              })
-            );
-          }
+          storedDataInJson = feed.map((item) => ({
+            date: new Date(
+              item.time_published.slice(0, 4) +
+                "-" +
+                item.time_published.slice(4, 6) +
+                "-" +
+                item.time_published.slice(6, 8)
+            ).toLocaleDateString(),
+            title: item.title,
+            author:
+              item.authors && item.authors.length > 0
+                ? item.authors[0]
+                : "Unknown",
+            content: item.summary,
+            image: item.banner_image || null,
+            link: item.url,
+          }));
         }
 
         if (storedData && todayDate === storedDate && Array.isArray(storedDataInJson)) {
-          console.log(storedData);
           setNewsData(storedDataInJson);
           return;
         } else {
@@ -45,8 +49,8 @@ const NewsPage = () => {
           localStorage.removeItem("newsDataDate");
         }
 
-        const response = await fetch("http://localhost:3001/getnews", {
-          method: "POST",
+        const response = await fetch(`http://localhost:3001/getnews`, {
+          method: "GET",
           headers: {
             "Content-Type": "application/json",
           },
@@ -54,22 +58,28 @@ const NewsPage = () => {
 
         if (response.ok) {
           const data = await response.json();
-          const timeSeries = data.news["Time Series (Daily)"];
-          let formattedData = [];
+          const feed = data.feed || [];
 
-          if (timeSeries) {
-            formattedData = Object.entries(timeSeries).map(([date, values]) => ({
-              date,
-              title: `Stock Data - ${date}`,
-              author: "Market API",
-              content: `Open: ${values["1. open"]}, High: ${values["2. high"]}, Low: ${values["3. low"]}, Close: ${values["4. close"]}, Volume: ${values["5. volume"]}`,
-              image: null,
-              link: "#",
-            }));
-          }
+          const formattedData = feed.map((item) => ({
+            date: new Date(
+              item.time_published.slice(0, 4) +
+                "-" +
+                item.time_published.slice(4, 6) +
+                "-" +
+                item.time_published.slice(6, 8)
+            ).toLocaleDateString(),
+            title: item.title,
+            author:
+              item.authors && item.authors.length > 0
+                ? item.authors[0]
+                : "Unknown",
+            content: item.summary,
+            image: item.banner_image || null,
+            link: item.url,
+          }));
 
           setNewsData(formattedData);
-          localStorage.setItem("newsData", JSON.stringify(data.news));
+          localStorage.setItem("newsData", JSON.stringify(data));
           localStorage.setItem("newsDataDate", todayDate);
         } else {
           notifyError("Failed to fetch news data.");
@@ -100,7 +110,6 @@ const NewsPage = () => {
         }}
       >
         {currentItems.map((newsItem, index) => (
-          console.log(newsItem),
           <NewsCard
             key={index}
             title={newsItem.title}
@@ -112,6 +121,7 @@ const NewsPage = () => {
           />
         ))}
       </div>
+
       <div style={{ textAlign: "center", marginTop: "20px", marginBottom: "60px" }}>
         <Stack spacing={2} direction="row" justifyContent="center">
           <Pagination

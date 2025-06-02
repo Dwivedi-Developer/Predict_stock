@@ -11,6 +11,7 @@ const app = express();
 app.use(express.static("public"));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
+const request = require("request");
 
 // 🔹 CORS Configuration (Adjust for Production)
 app.use(cors({
@@ -29,13 +30,13 @@ app.post("/getStockData", async (req, res) => {
   try {
     const { stockSymbol } = req.body;
     
-    const apiKey = process.env.ALPHA_VANTAGE_API_KEY || "demo";
+    const apiKey = process.env.ALPHA_VANTAGE_API_KEY ;
     
     if (!stockSymbol) {
       return res.status(400).json({ success: false, error: "Stock symbol is required" });
     }
 
-    const apiUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&apikey=demo`;
+    const apiUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=TSCO.LON&outputsize=full&apikey=${apiKey}`;
     
 
     const response = await axios.get(apiUrl);
@@ -74,21 +75,31 @@ app.post("/getnewsrapidapi", async (req, res) => {
 });
 
 // 🔹 Fetch financial news from Financial Modeling Prep API
-app.post("/getnews", async (req, res) => {
-  try {
-    const apiKey = process.env.FINANCIALMODELAPI;
-    const page = Math.floor(Math.random() * 10); // 0–9
+app.get("/getnews", async (req, res) => {
+  const apiKey = process.env.FINANCIALMODELAPI || "demo"; // Replace "demo" with your actual key
+  const apiUrl = `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=AAPL&apikey=${apiKey}`;
 
-    const apiUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&apikey=demo`;
-    const response = await axios.get(apiUrl);
-   
+request.get(
+    {
+      url: apiUrl,
+      json: true,
+      headers: { "User-Agent": "request" },
+    },
+    (err, response, data) => {
+      if (err) {
+        console.error("Error fetching news:", err);
+        return res.status(500).json({ success: false, error: "Error fetching news" });
+      }
 
-    res.status(200).json({ success: true, news: response.data });
-  } catch (error) {
-    console.error("Error fetching news:", error.message);
-    res.status(500).json({ success: false, error: "Error fetching news" });
-  }
+      if (response.statusCode !== 200) {
+        console.error("API error:", response.statusCode);
+        return res.status(response.statusCode).json({ success: false, error: "Failed to fetch news" });
+      }
+      res.status(200).json({ success: true, news: data });
+    }
+  );
 });
+
 
 // 🔹 Predict stock prices using Python script
 app.post("/predictstock/:startdate/:enddate/:stocksymbol", async (req, res) => {
